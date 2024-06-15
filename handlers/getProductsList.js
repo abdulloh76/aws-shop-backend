@@ -1,4 +1,4 @@
-import data from '../utils/data.json'
+const data = require('data.json');
 
 exports.handler = async function(event) {
   const { products } = data

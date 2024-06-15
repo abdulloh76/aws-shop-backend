@@ -31,7 +31,9 @@ func NewAwsShopBackendStack(scope constructs.Construct, id string, props *AwsSho
 		Handler: jsii.String("getProductsById.handler"),
 	})
 
-	productApi := awsapigateway.NewRestApi(stack, jsii.String("Product-Service-Rest-Api"), &awsapigateway.RestApiProps{})
+	productApi := awsapigateway.NewRestApi(stack, jsii.String("Product-Service-Rest-Api"), &awsapigateway.RestApiProps{
+		DeployOptions: &awsapigateway.StageOptions{StageName: jsii.String("dev")},
+	})
 
 	// /products
 	productsResources := productApi.Root().AddResource(jsii.String("products"), &awsapigateway.ResourceOptions{})
