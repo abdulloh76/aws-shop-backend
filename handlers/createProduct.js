@@ -6,6 +6,18 @@ export async function handler(event) {
     console.log("🚀 request:", JSON.stringify(event, undefined, 2));
     const { title, description, price, count } = event.body;
 
+    if (!title || !description || !price || !count) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET",
+          "Content-Type": "application/json",
+        },
+        body: "one or more fields are missing for product creation"
+      };
+    }
+
     const productId = uuidv4();
     const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 
@@ -49,6 +61,7 @@ export async function handler(event) {
       body: JSON.stringify(joinedProduct)
     };
   } catch (error) {
+    console.log("🚀 ~ handler ~ error:", error);
     return {
       statusCode: 500,
       headers: {

@@ -8,7 +8,7 @@ export async function handler (event) {
   const client = new DynamoDBClient({ region: process.env.AWS_REGION });
   const products = [];
 
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 10; i++) {
     const productId = uuidv4();
     console.log("🚀 ~ handler ~ productId:", productId);
     const title = generate(1).toString();

@@ -38,6 +38,7 @@ export async function handler(event) {
       body: JSON.stringify(joinedProducts)
     };
   } catch (error) {
+    console.log("🚀 ~ handler ~ error:", error);
     return {
       statusCode: 500,
       headers: {
