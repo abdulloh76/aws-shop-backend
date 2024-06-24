@@ -1,38 +1,44 @@
-const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
-const { v4: uuidv4 } = require('uuid');
-const { generate } = require('random-words');
+import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { v4 as uuidv4 } from 'uuid';
+import { generate } from 'random-words';
 
-exports.handler = async function (event) {
+export async function handler (event) {
   console.log("request:", JSON.stringify(event, undefined, 2));
 
-  const client = new DynamoDBClient();
+  const client = new DynamoDBClient({ region: process.env.AWS_REGION });
   const products = [];
 
   for (let i = 0; i < 30; i++) {
     const productId = uuidv4();
+    console.log("🚀 ~ handler ~ productId:", productId);
+    const title = generate(1).toString();
+    const description = generate(10).join(" ");
+    const price = Math.floor(Math.random() * 100 + 1).toString();
+    const count = Math.floor(Math.random() * 100 + 1).toString();
 
     const putProductCommand = new PutItemCommand({
       TableName: process.env.PRODUCTS_TABLE_NAME,
       Item: {
         id: { "S": productId },
-        title: { "S": generate(1) },
-        description: { "S": generate(10).join(" ") },
-        price: { "N": Math.floor(Math.random() * 100 + 1) }
+        title: { "S": title },
+        description: { "S": description },
+        price: { "N": price }
       },
     });
     const product = await client.send(putProductCommand);
     console.log("🚀 ~ exports.handler=function ~ product:", JSON.stringify(product));
-    product.push(product)
 
     const putStockCommand = new PutItemCommand({
-      TableName: process.env.PRODUCTS_TABLE_NAME,
+      TableName: process.env.STOCKS_TABLE_NAME,
       Item: {
         product_id: { "S": productId },
-        count: { "N": Math.floor(Math.random() * 100 + 1) }
+        count: { "N": count }
       },
     });
     const stock = await client.send(putStockCommand);
     console.log("🚀 ~ exports.handler=function ~ stock:", JSON.stringify(stock));
+
+    products.push({ id: productId, title, description, price, count })
   }
 
   return {
@@ -44,4 +50,4 @@ exports.handler = async function (event) {
     },
     body: JSON.stringify(products)
   };
-};
+}

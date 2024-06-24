@@ -1,12 +1,12 @@
-const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
-const { v4: uuidv4 } = require('uuid');
+import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { v4 as uuidv4 } from 'uuid';
 
-exports.handler = async function (event) {
-  console.log("request:", JSON.stringify(event, undefined, 2));
-  const { title, description, price, count } = event.params.body;
+export async function handler (event) {
+  console.log("🚀 request:", JSON.stringify(event, undefined, 2));
+  const { title, description, price, count } = event.body;
 
   const productId = uuidv4();
-  const client = new DynamoDBClient();
+  const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 
   const putProductCommand = new PutItemCommand({
     TableName: process.env.PRODUCTS_TABLE_NAME,
@@ -14,21 +14,29 @@ exports.handler = async function (event) {
       id: { "S": productId },
       title: { "S": title },
       description: { "S": description },
-      price: { "N": price }
+      price: { "N": price.toString() }
     },
   });
   const product = await client.send(putProductCommand);
   console.log("🚀 ~ exports.handler=function ~ product:", JSON.stringify(product));
 
   const putStockCommand = new PutItemCommand({
-    TableName: process.env.PRODUCTS_TABLE_NAME,
+    TableName: process.env.STOCKS_TABLE_NAME,
     Item: {
       product_id: { "S": productId },
-      count: { "N": count }
+      count: { "N": count.toString() }
     },
   });
   const stock = await client.send(putStockCommand);
   console.log("🚀 ~ exports.handler=function ~ stock:", JSON.stringify(stock));
+
+  const joinedProduct = {
+    id: product.Item.id.S,
+    title: product.Item.title.S,
+    description: product.Item.description.S,
+    price: product.Item.price.N,
+    count: stock.Item.count.N
+  }
 
   return {
     statusCode: 200,
@@ -37,6 +45,6 @@ exports.handler = async function (event) {
       "Access-Control-Allow-Methods": "GET",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(product)
+    body: JSON.stringify(joinedProduct)
   };
-};
+}

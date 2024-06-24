@@ -58,6 +58,24 @@ func NewAwsShopBackendStack(scope constructs.Construct, id string, props *AwsSho
 			"STOCKS_TABLE_NAME":   stocksTable.TableName(),
 		},
 	})
+	generateRandomStockProductsLambda := awslambda.NewFunction(stack, jsii.String("GenerateRandomStockProductsLambda"), &awslambda.FunctionProps{
+		Code:    awslambda.Code_FromAsset(jsii.String("handlers"), nil),
+		Runtime: awslambda.Runtime_NODEJS_18_X(),
+		Handler: jsii.String("migrateRandomData.handler"),
+		Environment: &map[string]*string{
+			"PRODUCTS_TABLE_NAME": productsTable.TableName(),
+			"STOCKS_TABLE_NAME":   stocksTable.TableName(),
+		},
+	})
+
+	productsTable.GrantReadWriteData(getProductsHandler)
+	productsTable.GrantReadWriteData(getProductByIdHandler)
+	productsTable.GrantReadWriteData(createProductHandler)
+	productsTable.GrantReadWriteData(generateRandomStockProductsLambda)
+	stocksTable.GrantReadWriteData(getProductsHandler)
+	stocksTable.GrantReadWriteData(getProductByIdHandler)
+	stocksTable.GrantReadWriteData(createProductHandler)
+	stocksTable.GrantReadWriteData(generateRandomStockProductsLambda)
 
 	// * apigateway instance
 	productApi := awsapigateway.NewRestApi(stack, jsii.String("Product-Service-Rest-Api"), &awsapigateway.RestApiProps{
