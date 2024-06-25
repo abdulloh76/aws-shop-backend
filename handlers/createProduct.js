@@ -44,11 +44,11 @@ export async function handler(event) {
     console.log("🚀 ~ exports.handler=function ~ stock:", JSON.stringify(stock));
 
     const joinedProduct = {
-      id: product.Item.id.S,
-      title: product.Item.title.S,
-      description: product.Item.description.S,
-      price: product.Item.price.N,
-      count: stock.Item.count.N
+      id: productId,
+      title: title,
+      description: description,
+      price: price,
+      count: count
     }
 
     return {
