@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function handler(event) {
   try {
     console.log("🚀 request:", JSON.stringify(event, undefined, 2));
-    const { title, description, price, count } = event.body;
+    const { title, description, price, count } = JSON.parse(event.body);
 
     if (!title || !description || !price || !count) {
       return {

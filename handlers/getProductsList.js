@@ -23,8 +23,8 @@ export async function handler(event) {
         id: p.id.S,
         title: p.title.S,
         description: p.description.S,
-        price: p.price.N,
-        count: s.count.N
+        price: Number(p.price.N),
+        count: Number(s.count.N)
       })
     })
 

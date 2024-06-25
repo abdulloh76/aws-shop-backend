@@ -36,8 +36,8 @@ export async function handler(event) {
       id: product.Item.id.S,
       title: product.Item.title.S,
       description: product.Item.description.S,
-      price: product.Item.price.N,
-      count: stock.Item.count.N
+      price: Number(product.Item.price.N),
+      count: Number(stock.Item.count.N)
     }
 
     return {
