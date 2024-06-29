@@ -9,11 +9,11 @@ import (
 	"github.com/aws/jsii-runtime-go"
 )
 
-type AwsShopBackendStackProps struct {
+type ProductServiceStackProps struct {
 	awscdk.StackProps
 }
 
-func NewAwsShopBackendStack(scope constructs.Construct, id string, props *AwsShopBackendStackProps) awscdk.Stack {
+func NewProductServiceStack(scope constructs.Construct, id string, props *ProductServiceStackProps) awscdk.Stack {
 	var sprops awscdk.StackProps
 	if props != nil {
 		sprops = props.StackProps
@@ -122,7 +122,7 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
-	NewAwsShopBackendStack(app, "AwsShopBackendStack", &AwsShopBackendStackProps{})
+	NewProductServiceStack(app, "ProductServiceStack", &ProductServiceStackProps{})
 
 	app.Synth(nil)
 }

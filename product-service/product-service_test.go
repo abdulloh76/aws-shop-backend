@@ -10,12 +10,12 @@ package main
 
 // example tests. To run these tests, uncomment this file along with the
 // example resource in product-service_test.go
-// func TestAwsShopBackendStack(t *testing.T) {
+// func TestProductServiceStack(t *testing.T) {
 // 	// GIVEN
 // 	app := awscdk.NewApp(nil)
 
 // 	// WHEN
-// 	stack := NewAwsShopBackendStack(app, "MyStack", nil)
+// 	stack := NewProductServiceStack(app, "MyStack", nil)
 
 // 	// THEN
 // 	template := assertions.Template_FromStack(stack, nil)
