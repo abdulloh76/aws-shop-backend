@@ -1,4 +1,4 @@
-module aws-shop-backend
+module product-service
 
 go 1.18
 

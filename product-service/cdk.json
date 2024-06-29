@@ -1,5 +1,5 @@
 {
-  "app": "go mod download && go run aws-shop-backend.go",
+  "app": "go mod download && go run product-service.go",
   "watch": {
     "include": [
       "**"

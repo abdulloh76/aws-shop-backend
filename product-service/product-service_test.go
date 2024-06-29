@@ -9,7 +9,7 @@ package main
 // )
 
 // example tests. To run these tests, uncomment this file along with the
-// example resource in aws-shop-backend_test.go
+// example resource in product-service_test.go
 // func TestAwsShopBackendStack(t *testing.T) {
 // 	// GIVEN
 // 	app := awscdk.NewApp(nil)
