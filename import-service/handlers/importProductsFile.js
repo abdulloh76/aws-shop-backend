@@ -14,7 +14,7 @@ export async function handler(event) {
       Key: `uploaded/${fileName}`,
     });
 
-    const presignedUrl = getSignedUrl(s3Client, command);
+    const presignedUrl = await getSignedUrl(s3Client, command);
     console.log("🚀 ~ handler ~ presignedUrl:", presignedUrl);
 
     return {
