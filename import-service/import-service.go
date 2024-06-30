@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awss3notifications"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -20,7 +21,7 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	shopImports := awss3.NewBucket(stack, jsii.String("products-import"), &awss3.BucketProps{})
+	importsBucket := awss3.NewBucket(stack, jsii.String("products-import"), &awss3.BucketProps{})
 
 	// * lambda handlers
 	importProductsFileHandler := awslambda.NewFunction(stack, jsii.String("ImportProductsFileHandler"), &awslambda.FunctionProps{
@@ -28,11 +29,30 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 		Runtime: awslambda.Runtime_NODEJS_18_X(),
 		Handler: jsii.String("importProductsFile.handler"),
 		Environment: &map[string]*string{
-			"BUCKET_NAME": shopImports.BucketName(),
+			"BUCKET_NAME": importsBucket.BucketName(),
+		},
+	})
+	importFileParserHandler := awslambda.NewFunction(stack, jsii.String("importFileParserHandler"), &awslambda.FunctionProps{
+		Code:    awslambda.Code_FromAsset(jsii.String("handlers"), nil),
+		Runtime: awslambda.Runtime_NODEJS_18_X(),
+		Handler: jsii.String("importFileParser.handler"),
+		Environment: &map[string]*string{
+			"BUCKET_NAME": importsBucket.BucketName(),
 		},
 	})
 
-	shopImports.GrantReadWrite(importProductsFileHandler, importProductsFileHandler.Role())
+	// * bucket grant accesses
+	importsBucket.GrantReadWrite(importProductsFileHandler, importProductsFileHandler.Role())
+	importsBucket.GrantPut(importProductsFileHandler, importProductsFileHandler.Role())
+	importsBucket.GrantReadWrite(importFileParserHandler, importFileParserHandler.Role())
+	importsBucket.GrantPut(importFileParserHandler, importFileParserHandler.Role())
+	importsBucket.GrantDelete(importFileParserHandler, importFileParserHandler.Role())
+
+	// * event notifications
+	parserNotificationDest := awss3notifications.NewLambdaDestination(importFileParserHandler)
+	importsBucket.AddEventNotification(awss3.EventType_OBJECT_CREATED, parserNotificationDest, &awss3.NotificationKeyFilter{
+		Prefix: jsii.String("uploaded/"),
+	})
 
 	// * apigateway instance
 	importApi := awsapigateway.NewRestApi(stack, jsii.String("Import-Service-Rest-Api"), &awsapigateway.RestApiProps{
