@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3notifications"
@@ -21,7 +22,22 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
-	importsBucket := awss3.NewBucket(stack, jsii.String("products-import"), &awss3.BucketProps{})
+	importsBucket := awss3.NewBucket(stack, jsii.String("products-import"), &awss3.BucketProps{
+		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+		Cors: &[]*awss3.CorsRule{
+			{
+				AllowedMethods: &[]awss3.HttpMethods{awss3.HttpMethods_GET, awss3.HttpMethods_POST, awss3.HttpMethods_PUT, awss3.HttpMethods_HEAD, awss3.HttpMethods_DELETE},
+				AllowedOrigins: jsii.Strings("*"),
+				AllowedHeaders: jsii.Strings("*"),
+			},
+		},
+	})
+	importsBucket.AddToResourcePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect:     awsiam.Effect_ALLOW,
+		Actions:    jsii.Strings("s3:*"),
+		Resources:  jsii.Strings(*importsBucket.BucketArn() + "/*"),
+		Principals: &[]awsiam.IPrincipal{awsiam.NewServicePrincipal(jsii.String("lambda.amazonaws.com"), &awsiam.ServicePrincipalOpts{})},
+	}))
 
 	// * lambda handlers
 	importProductsFileHandler := awslambda.NewFunction(stack, jsii.String("ImportProductsFileHandler"), &awslambda.FunctionProps{
