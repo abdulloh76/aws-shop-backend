@@ -42,11 +42,11 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	})
 
 	// * bucket grant accesses
-	importsBucket.GrantReadWrite(importProductsFileHandler, importProductsFileHandler.Role())
-	importsBucket.GrantPut(importProductsFileHandler, importProductsFileHandler.Role())
-	importsBucket.GrantReadWrite(importFileParserHandler, importFileParserHandler.Role())
-	importsBucket.GrantPut(importFileParserHandler, importFileParserHandler.Role())
-	importsBucket.GrantDelete(importFileParserHandler, importFileParserHandler.Role())
+	importsBucket.GrantReadWrite(importProductsFileHandler, jsii.String("*"))
+	importsBucket.GrantPut(importProductsFileHandler, jsii.String("*"))
+	importsBucket.GrantReadWrite(importFileParserHandler, jsii.String("*"))
+	importsBucket.GrantPut(importFileParserHandler, jsii.String("*"))
+	importsBucket.GrantDelete(importFileParserHandler, jsii.String("*"))
 
 	// * event notifications
 	parserNotificationDest := awss3notifications.NewLambdaDestination(importFileParserHandler)

@@ -12,7 +12,6 @@ export async function handler(event) {
     const command = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
       Key: `uploaded/${fileName}`,
-      ContentType: 'text/csv'
     });
 
     const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 180 });
@@ -21,9 +20,10 @@ export async function handler(event) {
     return {
       statusCode: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET",
+        "Access-Control-Allow-Headers": "Origin,Content-Type",
         "Content-Type": "application/json",
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,PUT',
       },
       body: presignedUrl
     };
