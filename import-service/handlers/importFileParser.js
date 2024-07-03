@@ -32,12 +32,14 @@ export async function handler(event) {
         CopySource: objectKey,
         Key: `${objectKey.replace('uploaded', 'parsed')}`,
       });
-      await s3Client.send(copyCommand)
+      const copyResult = await s3Client.send(copyCommand)
+      console.log("🚀 ~ handler ~ copyResult:", copyResult);
       const deleteCommand = new DeleteObjectCommand({
         Bucket: bucketName,
         Key: objectKey,
       });
-      await s3Client.send(deleteCommand)
+      const delResult = await s3Client.send(deleteCommand)
+      console.log("🚀 ~ handler ~ delResult:", delResult);
     }
   } catch (error) {
     console.log("🚀 ~ handler ~ error:", error);
