@@ -23,7 +23,8 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	stack := awscdk.NewStack(scope, &id, &sprops)
 
 	importsBucket := awss3.NewBucket(stack, jsii.String("products-import"), &awss3.BucketProps{
-		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
+		RemovalPolicy:     awscdk.RemovalPolicy_DESTROY,
+		AutoDeleteObjects: jsii.Bool(true),
 		Cors: &[]*awss3.CorsRule{
 			{
 				AllowedMethods: &[]awss3.HttpMethods{awss3.HttpMethods_GET, awss3.HttpMethods_POST, awss3.HttpMethods_PUT, awss3.HttpMethods_HEAD, awss3.HttpMethods_DELETE},
