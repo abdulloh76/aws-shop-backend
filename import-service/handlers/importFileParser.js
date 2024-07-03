@@ -16,11 +16,9 @@ export async function handler(event) {
         Key: objectKey,
       });
 
-      const { body } = await s3Client.send(getCommand)
-      console.log("🚀 ~ handler ~ body:", body);
-
+      const { Body } = await s3Client.send(getCommand)
       const products = [];
-      body
+      Body
         .pipe(csv())
         .on('data', (data) => products.push(data))
         .on('end', () => {

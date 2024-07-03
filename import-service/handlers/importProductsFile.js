@@ -12,6 +12,7 @@ export async function handler(event) {
     const command = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
       Key: `uploaded/${fileName}`,
+      ContentType: 'text/csv',
     });
 
     const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 180 });

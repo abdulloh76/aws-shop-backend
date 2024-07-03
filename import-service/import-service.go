@@ -64,6 +64,13 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	importsBucket.GrantPut(importFileParserHandler, jsii.String("*"))
 	importsBucket.GrantDelete(importFileParserHandler, jsii.String("*"))
 
+	importsBucket.AddToResourcePolicy(awsiam.NewPolicyStatement(&awsiam.PolicyStatementProps{
+		Effect:     awsiam.Effect_ALLOW,
+		Actions:    jsii.Strings("s3:*"),
+		Resources:  jsii.Strings(*importsBucket.BucketArn() + "/*"),
+		Principals: &[]awsiam.IPrincipal{importProductsFileHandler.GrantPrincipal(), importFileParserHandler.GrantPrincipal()},
+	}))
+
 	// * event notifications
 	parserNotificationDest := awss3notifications.NewLambdaDestination(importFileParserHandler)
 	importsBucket.AddEventNotification(awss3.EventType_OBJECT_CREATED, parserNotificationDest, &awss3.NotificationKeyFilter{
