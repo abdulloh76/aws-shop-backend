@@ -17,31 +17,35 @@ export async function handler(event) {
       });
 
       const { Body } = await s3Client.send(getCommand)
-      const products = [];
-      Body
-        .pipe(csv())
-        .on('data', (data) => products.push(data))
-        .on('end', () => {
-          // * {id,title,description,price,count}
-          console.log(products);
-          // * just log and thats it)
-        });
+      const products = await streamParser(Body.pipe(csv()));
+      console.log("🚀 ~ handler ~ products:", products);
 
       const copyCommand = new CopyObjectCommand({
         Bucket: bucketName,
-        CopySource: objectKey,
+        CopySource: `${bucketName}/${objectKey}`,
         Key: `${objectKey.replace('uploaded', 'parsed')}`,
       });
-      const copyResult = await s3Client.send(copyCommand)
-      console.log("🚀 ~ handler ~ copyResult:", copyResult);
+      await s3Client.send(copyCommand)
       const deleteCommand = new DeleteObjectCommand({
         Bucket: bucketName,
         Key: objectKey,
       });
-      const delResult = await s3Client.send(deleteCommand)
-      console.log("🚀 ~ handler ~ delResult:", delResult);
+      await s3Client.send(deleteCommand)
     }
   } catch (error) {
     console.log("🚀 ~ handler ~ error:", error);
   }
+}
+
+async function streamParser(readableStream) {
+  const collectedData = []
+  return new Promise((resolve, reject) => {
+    readableStream
+      .on('data', (data) => collectedData.push(data))
+      .on('end', () => {
+        // * {id,title,description,price,count}
+        resolve(collectedData)
+      })
+      .on('error', reject);
+  });
 }
