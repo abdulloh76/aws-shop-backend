@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -29,6 +30,9 @@ func NewProductServiceStack(scope constructs.Construct, id string, props *Produc
 		PartitionKey:  &awsdynamodb.Attribute{Name: jsii.String("product_id"), Type: awsdynamodb.AttributeType_STRING},
 		RemovalPolicy: awscdk.RemovalPolicy_DESTROY,
 	})
+
+	// * amazon sqs
+	catalogItemsQueue := awssqs.NewQueue(stack, jsii.String("catalogItemsQueue"), &awssqs.QueueProps{})
 
 	// * lambda handlers
 	getProductsHandler := awslambda.NewFunction(stack, jsii.String("GetProductsHandler"), &awslambda.FunctionProps{
@@ -67,15 +71,37 @@ func NewProductServiceStack(scope constructs.Construct, id string, props *Produc
 			"STOCKS_TABLE_NAME":   stocksTable.TableName(),
 		},
 	})
+	catalogBatchProcessHandler := awslambda.NewFunction(stack, jsii.String("CatalogBatchProcessHandler"), &awslambda.FunctionProps{
+		Code:    awslambda.Code_FromAsset(jsii.String("handlers"), nil),
+		Runtime: awslambda.Runtime_NODEJS_18_X(),
+		Handler: jsii.String("catalogBatchProcess.handler"),
+		Environment: &map[string]*string{
+			"PRODUCTS_TABLE_NAME": productsTable.TableName(),
+			"STOCKS_TABLE_NAME":   stocksTable.TableName(),
+		},
+	})
 
+	// * lambda event source
+	awslambda.NewEventSourceMapping(stack, jsii.String("sqsTrigger"), &awslambda.EventSourceMappingProps{
+		Target:         catalogBatchProcessHandler,
+		EventSourceArn: catalogItemsQueue.QueueArn(),
+		BatchSize:      jsii.Number(5),
+	})
+
+	// * queue grant access
+	catalogItemsQueue.GrantConsumeMessages(catalogBatchProcessHandler)
+
+	// * dynamodb table grant access
 	productsTable.GrantReadWriteData(getProductsHandler)
 	productsTable.GrantReadWriteData(getProductByIdHandler)
 	productsTable.GrantReadWriteData(createProductHandler)
 	productsTable.GrantReadWriteData(generateRandomStockProductsLambda)
+	productsTable.GrantReadWriteData(catalogBatchProcessHandler)
 	stocksTable.GrantReadWriteData(getProductsHandler)
 	stocksTable.GrantReadWriteData(getProductByIdHandler)
 	stocksTable.GrantReadWriteData(createProductHandler)
 	stocksTable.GrantReadWriteData(generateRandomStockProductsLambda)
+	stocksTable.GrantReadWriteData(catalogBatchProcessHandler)
 
 	// * apigateway instance
 	productApi := awsapigateway.NewRestApi(stack, jsii.String("Product-Service-Rest-Api"), &awsapigateway.RestApiProps{
