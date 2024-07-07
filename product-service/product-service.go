@@ -32,7 +32,9 @@ func NewProductServiceStack(scope constructs.Construct, id string, props *Produc
 	})
 
 	// * amazon sqs
-	catalogItemsQueue := awssqs.NewQueue(stack, jsii.String("catalogItemsQueue"), &awssqs.QueueProps{})
+	catalogItemsQueue := awssqs.NewQueue(stack, jsii.String("catalogItemsQueue"), &awssqs.QueueProps{
+		QueueName: jsii.String("catalogItemsQueue"),
+	})
 
 	// * lambda handlers
 	getProductsHandler := awslambda.NewFunction(stack, jsii.String("GetProductsHandler"), &awslambda.FunctionProps{
