@@ -1,5 +1,9 @@
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { v4 as uuidv4 } from 'uuid';
+
+const dynamoDBClient = new DynamoDBClient({ region: process.env.AWS_REGION });
+const snsClient = new SNSClient();
 
 export async function handler(event) {
   try {
@@ -10,7 +14,6 @@ export async function handler(event) {
 
       const { title, description, price, count } = JSON.parse(record.body);
       const productId = uuidv4();
-      const client = new DynamoDBClient({ region: process.env.AWS_REGION });
 
       const putProductCommand = new PutItemCommand({
         TableName: process.env.PRODUCTS_TABLE_NAME,
@@ -21,7 +24,7 @@ export async function handler(event) {
           price: { "N": price.toString() }
         },
       });
-      const product = await client.send(putProductCommand);
+      const product = await dynamoDBClient.send(putProductCommand);
       console.log("🚀 ~ exports.handler=function ~ product:", JSON.stringify(product));
 
       const putStockCommand = new PutItemCommand({
@@ -31,7 +34,7 @@ export async function handler(event) {
           count: { "N": count.toString() }
         },
       });
-      const stock = await client.send(putStockCommand);
+      const stock = await dynamoDBClient.send(putStockCommand);
       console.log("🚀 ~ exports.handler=function ~ stock:", JSON.stringify(stock));
 
       const joinedProduct = {
@@ -44,7 +47,22 @@ export async function handler(event) {
       consumedProducts.push(joinedProduct);
     }
 
-    console.log("🚀 ~ handler ~ consumedProducts:", consumedProducts);
+    const emailMessage = {
+      Message: 'New Products imported successfully',
+      products: consumedProducts
+    };
+    const publishCommand = new PublishCommand({
+      Message: JSON.stringify(emailMessage),
+      TopicArn: process.env.CREATE_PRODUCT_TOPIC_ARN,
+      MessageAttributes: {
+        newProductsAmount: {
+          DataType: 'Number',
+          StringValue: consumedProducts.length.toString(),
+        }
+      }
+    });
+    const snsPublishResponse = await snsClient.send(publishCommand);
+    console.log('Message successfully sent to SNS topic: ', snsPublishResponse.MessageId);
   } catch (error) {
     console.log("🚀 ~ handler ~ error:", error);
   }
