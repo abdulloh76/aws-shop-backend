@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsdynamodb"
@@ -8,10 +11,12 @@ import (
 	"github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
+	"github.com/joho/godotenv"
 )
 
 type ProductServiceStackProps struct {
 	awscdk.StackProps
+	SubscriptionEmailAddress string
 }
 
 func NewProductServiceStack(scope constructs.Construct, id string, props *ProductServiceStackProps) awscdk.Stack {
@@ -146,11 +151,21 @@ func NewProductServiceStack(scope constructs.Construct, id string, props *Produc
 }
 
 func main() {
+	// Load environment variables from .env file
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
 	defer jsii.Close()
+
+	emailAddress := os.Getenv("EMAIL_ADDRESS")
 
 	app := awscdk.NewApp(nil)
 
-	NewProductServiceStack(app, "ProductServiceStack", &ProductServiceStackProps{})
+	NewProductServiceStack(app, "ProductServiceStack", &ProductServiceStackProps{
+		SubscriptionEmailAddress: emailAddress,
+	})
 
 	app.Synth(nil)
 }
