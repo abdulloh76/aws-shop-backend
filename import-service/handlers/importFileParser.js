@@ -9,9 +9,7 @@ export async function handler(event) {
   try {
     console.log("request:", JSON.stringify(event, undefined, 2));
     const bucketName = process.env.BUCKET_NAME;
-
-    const getQueueUrlCommand = new GetQueueUrlCommand({ QueueName: "catalogItemsQueue" });
-    const { QueueUrl } = await sqsClient.send(getQueueUrlCommand);
+    const QueueUrl = process.env.CATALOG_QUEUE_URL;
 
     for (const record of event.Records) {
       const objectKey = record.s3.object.key;

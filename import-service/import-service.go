@@ -1,17 +1,24 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/aws/aws-cdk-go/awscdk/v2"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awsapigateway"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awss3notifications"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
+	"github.com/joho/godotenv"
 )
 
 type ImportServiceStackProps struct {
 	awscdk.StackProps
+	CatalogQueueArn string
+	CatalogQueueUrl string
 }
 
 func NewImportServiceStack(scope constructs.Construct, id string, props *ImportServiceStackProps) awscdk.Stack {
@@ -33,6 +40,12 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 		},
 	})
 
+	// * Import the existing SQS Queue by ARN and URL
+	catalogQueue := awssqs.Queue_FromQueueAttributes(stack, jsii.String("ImportedQueue"), &awssqs.QueueAttributes{
+		QueueUrl: jsii.String(props.CatalogQueueUrl),
+		QueueArn: jsii.String(props.CatalogQueueArn),
+	})
+
 	// * lambda handlers
 	importProductsFileHandler := awslambda.NewFunction(stack, jsii.String("ImportProductsFileHandler"), &awslambda.FunctionProps{
 		Code:    awslambda.Code_FromAsset(jsii.String("handlers"), nil),
@@ -47,9 +60,13 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 		Runtime: awslambda.Runtime_NODEJS_18_X(),
 		Handler: jsii.String("importFileParser.handler"),
 		Environment: &map[string]*string{
-			"BUCKET_NAME": importsBucket.BucketName(),
+			"BUCKET_NAME":       importsBucket.BucketName(),
+			"CATALOG_QUEUE_URL": &props.CatalogQueueUrl,
 		},
 	})
+
+	// * queue grant access
+	catalogQueue.GrantSendMessages(importFileParserHandler)
 
 	// * bucket grant accesses
 	importsBucket.GrantReadWrite(importProductsFileHandler, jsii.String("*"))
@@ -86,11 +103,23 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 }
 
 func main() {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
 	defer jsii.Close()
+
+	catalogQueueUrl := os.Getenv("CATALOG_QUEUE_URL")
+	catalogQueueArn := os.Getenv("CATALOG_QUEUE_ARN")
 
 	app := awscdk.NewApp(nil)
 
-	NewImportServiceStack(app, "ImportServiceStack", &ImportServiceStackProps{})
+	NewImportServiceStack(app, "ImportServiceStack", &ImportServiceStackProps{
+		CatalogQueueArn: catalogQueueArn,
+		CatalogQueueUrl: catalogQueueUrl,
+	})
 
 	app.Synth(nil)
 }
