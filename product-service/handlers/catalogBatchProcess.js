@@ -9,10 +9,14 @@ export async function handler(event) {
   try {
     console.log("🚀 catalogBatchProcess request:", JSON.stringify(event, undefined, 2));
     const consumedProducts = []
-    for (const record of event.Records) {
-      console.log('SQS Message:', record.body);
 
-      const { title, description, price, count } = JSON.parse(record.body);
+    console.log("🚀 ~ handler ~ event.Records:", event.Records);
+    const messageBody = JSON.parse(event.Records.body)
+
+    for (const message of messageBody) {
+      console.log('SQS Message:', message);
+
+      const { title, description, price, count } = message;
       const productId = uuidv4();
 
       const putProductCommand = new PutItemCommand({

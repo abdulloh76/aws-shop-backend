@@ -1,5 +1,5 @@
 import { GetObjectCommand, S3Client, CopyObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { SQSClient, GetQueueUrlCommand, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import csv from 'csv-parser';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -22,17 +22,15 @@ export async function handler(event) {
       const { Body } = await s3Client.send(getCommand)
       const products = await streamParser(Body.pipe(csv()));
 
-      for (const product of products) {
-        console.log("🚀 ~ handler ~ product:", product);
+      console.log("🚀 ~ handler ~ product:", products);
 
-        const input = {
-          QueueUrl,
-          MessageBody: JSON.stringify(product),
-        };
-        const sendMessageCommand = new SendMessageCommand(input);
-        const sqsSendMessageResponse = await sqsClient.send(sendMessageCommand);
-        console.log("🚀 ~ handler ~ sqsSendMessageResponse:", sqsSendMessageResponse);
-      }
+      const input = {
+        QueueUrl,
+        MessageBody: JSON.stringify(products),
+      };
+      const sendMessageCommand = new SendMessageCommand(input);
+      const sqsSendMessageResponse = await sqsClient.send(sendMessageCommand);
+      console.log("🚀 ~ handler ~ sqsSendMessageResponse:", sqsSendMessageResponse);
 
       const copyCommand = new CopyObjectCommand({
         Bucket: bucketName,
