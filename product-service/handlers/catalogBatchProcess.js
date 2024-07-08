@@ -10,45 +10,45 @@ export async function handler(event) {
     console.log("🚀 catalogBatchProcess request:", JSON.stringify(event, undefined, 2));
     const consumedProducts = []
 
-    console.log("🚀 ~ handler ~ event.Records:", event.Records);
-    const messageBody = JSON.parse(event.Records.body)
+    for (const record of event.Records) {
+      const productsFromSQS = JSON.parse(record.body)
+      console.log("🚀 ~ handler ~ SQS products:", productsFromSQS);
 
-    for (const message of messageBody) {
-      console.log('SQS Message:', message);
+      for (const productFromMessage of productsFromSQS) {
+        const { title, description, price, count } = productFromMessage;
+        const productId = uuidv4();
 
-      const { title, description, price, count } = message;
-      const productId = uuidv4();
+        const putProductCommand = new PutItemCommand({
+          TableName: process.env.PRODUCTS_TABLE_NAME,
+          Item: {
+            id: { "S": productId },
+            title: { "S": title },
+            description: { "S": description },
+            price: { "N": price.toString() }
+          },
+        });
+        const product = await dynamoDBClient.send(putProductCommand);
+        console.log("🚀 ~ exports.handler=function ~ product:", JSON.stringify(product));
 
-      const putProductCommand = new PutItemCommand({
-        TableName: process.env.PRODUCTS_TABLE_NAME,
-        Item: {
-          id: { "S": productId },
-          title: { "S": title },
-          description: { "S": description },
-          price: { "N": price.toString() }
-        },
-      });
-      const product = await dynamoDBClient.send(putProductCommand);
-      console.log("🚀 ~ exports.handler=function ~ product:", JSON.stringify(product));
+        const putStockCommand = new PutItemCommand({
+          TableName: process.env.STOCKS_TABLE_NAME,
+          Item: {
+            product_id: { "S": productId },
+            count: { "N": count.toString() }
+          },
+        });
+        const stock = await dynamoDBClient.send(putStockCommand);
+        console.log("🚀 ~ exports.handler=function ~ stock:", JSON.stringify(stock));
 
-      const putStockCommand = new PutItemCommand({
-        TableName: process.env.STOCKS_TABLE_NAME,
-        Item: {
-          product_id: { "S": productId },
-          count: { "N": count.toString() }
-        },
-      });
-      const stock = await dynamoDBClient.send(putStockCommand);
-      console.log("🚀 ~ exports.handler=function ~ stock:", JSON.stringify(stock));
-
-      const joinedProduct = {
-        id: productId,
-        title: title,
-        description: description,
-        price: price,
-        count: count
+        const joinedProduct = {
+          id: productId,
+          title: title,
+          description: description,
+          price: price,
+          count: count
+        }
+        consumedProducts.push(joinedProduct);
       }
-      consumedProducts.push(joinedProduct);
     }
 
     const emailMessage = {
