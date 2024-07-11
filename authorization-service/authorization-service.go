@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 
-	// "github.com/aws/aws-cdk-go/awscdk/v2/awssqs"
 	"github.com/aws/constructs-go/constructs/v10"
 	"github.com/aws/jsii-runtime-go"
 )
@@ -18,6 +18,19 @@ func NewAuthorizationServiceStack(scope constructs.Construct, id string, props *
 		sprops = props.StackProps
 	}
 	stack := awscdk.NewStack(scope, &id, &sprops)
+
+	// * lambda handlers
+	basicAuthorizer := awslambda.NewFunction(stack, jsii.String("GetProductsHandler"), &awslambda.FunctionProps{
+		FunctionName: jsii.String("basicAuthorizer"),
+		Code:         awslambda.Code_FromAsset(jsii.String("handlers"), nil),
+		Runtime:      awslambda.Runtime_NODEJS_18_X(),
+		Handler:      jsii.String("basicAuthorizer.handler"),
+	})
+
+	// Output the function name to use in other service cdk stack name
+	awscdk.NewCfnOutput(stack, jsii.String("function_name"), &awscdk.CfnOutputProps{
+		Value: basicAuthorizer.FunctionArn(),
+	})
 
 	return stack
 }
