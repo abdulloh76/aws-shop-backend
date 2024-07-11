@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.602.0",
+    "@aws-sdk/client-sns": "^3.609.0",
     "random-words": "^2.0.1",
     "uuid": "^10.0.0"
   }

@@ -1,3 +1,4 @@
+export * from './catalogBatchProcess'
 export * from './migrateRandomData'
 export * from './createProduct'
 export * from './getProductsList'
