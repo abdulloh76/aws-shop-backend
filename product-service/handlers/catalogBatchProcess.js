@@ -16,6 +16,12 @@ export async function handler(event) {
 
       for (const productFromMessage of productsFromSQS) {
         const { title, description, price, count } = productFromMessage;
+        if (!title || !description || !price || !count) {
+          console.log("user sent csv file in wrong format");
+          console.log("title=%s, description=%s, price=%s, count=%s", title, description, price, count);
+          return;
+        }
+
         const productId = uuidv4();
 
         const putProductCommand = new PutItemCommand({
