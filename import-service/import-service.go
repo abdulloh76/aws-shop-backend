@@ -17,8 +17,9 @@ import (
 
 type ImportServiceStackProps struct {
 	awscdk.StackProps
-	CatalogQueueArn string
-	CatalogQueueUrl string
+	CatalogQueueArn     string
+	CatalogQueueUrl     string
+	LambdaAuthorizerArn string
 }
 
 func NewImportServiceStack(scope constructs.Construct, id string, props *ImportServiceStackProps) awscdk.Stack {
@@ -64,6 +65,10 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 			"CATALOG_QUEUE_URL": &props.CatalogQueueUrl,
 		},
 	})
+	lambdaAuthorizerHandler := awslambda.Function_FromFunctionArn(stack, jsii.String("LambdaAuthorizerHandler"), &props.LambdaAuthorizerArn)
+	lambdaTokenAuthorizer := awsapigateway.NewTokenAuthorizer(stack, jsii.String("LambdaAuthorizer"), &awsapigateway.TokenAuthorizerProps{
+		Handler: lambdaAuthorizerHandler,
+	})
 
 	// * queue grant access
 	catalogQueue.GrantSendMessages(importFileParserHandler)
@@ -96,7 +101,9 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 			importProductsFileHandler,
 			&awsapigateway.LambdaIntegrationOptions{},
 		),
-		importsResources.DefaultMethodOptions(),
+		&awsapigateway.MethodOptions{
+			Authorizer: lambdaTokenAuthorizer,
+		},
 	)
 
 	return stack
@@ -113,12 +120,14 @@ func main() {
 
 	catalogQueueUrl := os.Getenv("CATALOG_QUEUE_URL")
 	catalogQueueArn := os.Getenv("CATALOG_QUEUE_ARN")
+	lambdaAuthorizerArn := os.Getenv("LAMBDA_AUTHORIZER_NAME")
 
 	app := awscdk.NewApp(nil)
 
 	NewImportServiceStack(app, "ImportServiceStack", &ImportServiceStackProps{
-		CatalogQueueArn: catalogQueueArn,
-		CatalogQueueUrl: catalogQueueUrl,
+		CatalogQueueArn:     catalogQueueArn,
+		CatalogQueueUrl:     catalogQueueUrl,
+		LambdaAuthorizerArn: lambdaAuthorizerArn,
 	})
 
 	app.Synth(nil)
