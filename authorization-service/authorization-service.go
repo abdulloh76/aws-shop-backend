@@ -35,8 +35,7 @@ func NewAuthorizationServiceStack(scope constructs.Construct, id string, props *
 		},
 	})
 
-	// Output the function name to use in other service cdk stack name
-	awscdk.NewCfnOutput(stack, jsii.String("function_name"), &awscdk.CfnOutputProps{
+	awscdk.NewCfnOutput(stack, jsii.String("function_arn"), &awscdk.CfnOutputProps{
 		Value: basicAuthorizer.FunctionArn(),
 	})
 
@@ -56,7 +55,7 @@ func main() {
 
 	app := awscdk.NewApp(nil)
 
-	NewAuthorizationServiceStack(app, "ImportServiceStack", &AuthorizationServiceStackProps{
+	NewAuthorizationServiceStack(app, "AuthorizerServiceStack", &AuthorizationServiceStackProps{
 		SecretKey: secretKey,
 	})
 
