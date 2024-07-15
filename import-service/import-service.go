@@ -92,6 +92,19 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 		DeployOptions: &awsapigateway.StageOptions{StageName: jsii.String("dev")},
 	})
 
+	importApi.AddGatewayResponse(jsii.String("ResponseType_4XX"), &awsapigateway.GatewayResponseOptions{
+		Type: awsapigateway.ResponseType_DEFAULT_4XX(),
+		ResponseHeaders: &map[string]*string{
+			"Access-Control-Allow-Origin": jsii.String("'*'"),
+		},
+	})
+	importApi.AddGatewayResponse(jsii.String("ResponseType_5XX"), &awsapigateway.GatewayResponseOptions{
+		Type: awsapigateway.ResponseType_DEFAULT_5XX(),
+		ResponseHeaders: &map[string]*string{
+			"Access-Control-Allow-Origin": jsii.String("'*'"),
+		},
+	})
+
 	// The name will be passed in a query string as a name parameter and should be described in the AWS CDK Stack as a request parameter.
 	// * /import - GET
 	importsResources := importApi.Root().AddResource(jsii.String("import"), &awsapigateway.ResourceOptions{})
