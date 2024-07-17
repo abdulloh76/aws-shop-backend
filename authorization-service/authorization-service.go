@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-cdk-go/awscdk/v2"
+	"github.com/aws/aws-cdk-go/awscdk/v2/awsiam"
 	"github.com/aws/aws-cdk-go/awscdk/v2/awslambda"
 	"github.com/joho/godotenv"
 
@@ -34,6 +35,8 @@ func NewAuthorizationServiceStack(scope constructs.Construct, id string, props *
 			"SECRET_KEY": &props.SecretKey,
 		},
 	})
+
+	basicAuthorizer.GrantInvoke(awsiam.NewServicePrincipal(jsii.String("apigateway.amazonaws.com"), &awsiam.ServicePrincipalOpts{}))
 
 	awscdk.NewCfnOutput(stack, jsii.String("function_arn"), &awscdk.CfnOutputProps{
 		Value: basicAuthorizer.FunctionArn(),

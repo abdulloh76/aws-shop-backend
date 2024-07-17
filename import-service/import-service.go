@@ -65,9 +65,13 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 			"CATALOG_QUEUE_URL": &props.CatalogQueueUrl,
 		},
 	})
-	lambdaAuthorizerHandler := awslambda.Function_FromFunctionArn(stack, jsii.String("LambdaAuthorizerHandler"), &props.LambdaAuthorizerArn)
+	lambdaAuthorizerHandler := awslambda.Function_FromFunctionAttributes(stack, jsii.String("LambdaAuthorizerHandler"), &awslambda.FunctionAttributes{
+		FunctionArn:     &props.LambdaAuthorizerArn,
+		SkipPermissions: jsii.Bool(true),
+	})
 	lambdaTokenAuthorizer := awsapigateway.NewTokenAuthorizer(stack, jsii.String("LambdaAuthorizer"), &awsapigateway.TokenAuthorizerProps{
-		Handler: lambdaAuthorizerHandler,
+		Handler:        lambdaAuthorizerHandler,
+		IdentitySource: awsapigateway.IdentitySource_Header(jsii.String("Authorization")),
 	})
 
 	// * queue grant access
@@ -90,18 +94,27 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	// * apigateway instance
 	importApi := awsapigateway.NewRestApi(stack, jsii.String("Import-Service-Rest-Api"), &awsapigateway.RestApiProps{
 		DeployOptions: &awsapigateway.StageOptions{StageName: jsii.String("dev")},
+		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
+			AllowOrigins: awsapigateway.Cors_ALL_ORIGINS(),
+			AllowMethods: awsapigateway.Cors_ALL_METHODS(),
+			AllowHeaders: jsii.Strings("Authorization", "Content-Type"),
+		},
 	})
 
 	importApi.AddGatewayResponse(jsii.String("ResponseType_4XX"), &awsapigateway.GatewayResponseOptions{
 		Type: awsapigateway.ResponseType_DEFAULT_4XX(),
 		ResponseHeaders: &map[string]*string{
-			"Access-Control-Allow-Origin": jsii.String("'*'"),
+			"Access-Control-Allow-Origin":  jsii.String("'*'"),
+			"Access-Control-Allow-Methods": jsii.String("'*'"),
+			"Access-Control-Allow-Headers": jsii.String("'*'"),
 		},
 	})
 	importApi.AddGatewayResponse(jsii.String("ResponseType_5XX"), &awsapigateway.GatewayResponseOptions{
 		Type: awsapigateway.ResponseType_DEFAULT_5XX(),
 		ResponseHeaders: &map[string]*string{
-			"Access-Control-Allow-Origin": jsii.String("'*'"),
+			"Access-Control-Allow-Origin":  jsii.String("'*'"),
+			"Access-Control-Allow-Methods": jsii.String("'*'"),
+			"Access-Control-Allow-Headers": jsii.String("'*'"),
 		},
 	})
 
@@ -115,7 +128,8 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 			&awsapigateway.LambdaIntegrationOptions{},
 		),
 		&awsapigateway.MethodOptions{
-			Authorizer: lambdaTokenAuthorizer,
+			Authorizer:        lambdaTokenAuthorizer,
+			AuthorizationType: awsapigateway.AuthorizationType_CUSTOM,
 		},
 	)
 
