@@ -17,8 +17,9 @@ import (
 
 type ImportServiceStackProps struct {
 	awscdk.StackProps
-	CatalogQueueArn string
-	CatalogQueueUrl string
+	CatalogQueueArn     string
+	CatalogQueueUrl     string
+	LambdaAuthorizerArn string
 }
 
 func NewImportServiceStack(scope constructs.Construct, id string, props *ImportServiceStackProps) awscdk.Stack {
@@ -64,6 +65,14 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 			"CATALOG_QUEUE_URL": &props.CatalogQueueUrl,
 		},
 	})
+	lambdaAuthorizerHandler := awslambda.Function_FromFunctionAttributes(stack, jsii.String("LambdaAuthorizerHandler"), &awslambda.FunctionAttributes{
+		FunctionArn:     &props.LambdaAuthorizerArn,
+		SkipPermissions: jsii.Bool(true),
+	})
+	lambdaTokenAuthorizer := awsapigateway.NewTokenAuthorizer(stack, jsii.String("LambdaAuthorizer"), &awsapigateway.TokenAuthorizerProps{
+		Handler:        lambdaAuthorizerHandler,
+		IdentitySource: awsapigateway.IdentitySource_Header(jsii.String("Authorization")),
+	})
 
 	// * queue grant access
 	catalogQueue.GrantSendMessages(importFileParserHandler)
@@ -85,6 +94,28 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 	// * apigateway instance
 	importApi := awsapigateway.NewRestApi(stack, jsii.String("Import-Service-Rest-Api"), &awsapigateway.RestApiProps{
 		DeployOptions: &awsapigateway.StageOptions{StageName: jsii.String("dev")},
+		DefaultCorsPreflightOptions: &awsapigateway.CorsOptions{
+			AllowOrigins: awsapigateway.Cors_ALL_ORIGINS(),
+			AllowMethods: awsapigateway.Cors_ALL_METHODS(),
+			AllowHeaders: jsii.Strings("Authorization", "Content-Type"),
+		},
+	})
+
+	importApi.AddGatewayResponse(jsii.String("ResponseType_4XX"), &awsapigateway.GatewayResponseOptions{
+		Type: awsapigateway.ResponseType_DEFAULT_4XX(),
+		ResponseHeaders: &map[string]*string{
+			"Access-Control-Allow-Origin":  jsii.String("'*'"),
+			"Access-Control-Allow-Methods": jsii.String("'*'"),
+			"Access-Control-Allow-Headers": jsii.String("'*'"),
+		},
+	})
+	importApi.AddGatewayResponse(jsii.String("ResponseType_5XX"), &awsapigateway.GatewayResponseOptions{
+		Type: awsapigateway.ResponseType_DEFAULT_5XX(),
+		ResponseHeaders: &map[string]*string{
+			"Access-Control-Allow-Origin":  jsii.String("'*'"),
+			"Access-Control-Allow-Methods": jsii.String("'*'"),
+			"Access-Control-Allow-Headers": jsii.String("'*'"),
+		},
 	})
 
 	// The name will be passed in a query string as a name parameter and should be described in the AWS CDK Stack as a request parameter.
@@ -96,7 +127,10 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 			importProductsFileHandler,
 			&awsapigateway.LambdaIntegrationOptions{},
 		),
-		importsResources.DefaultMethodOptions(),
+		&awsapigateway.MethodOptions{
+			Authorizer:        lambdaTokenAuthorizer,
+			AuthorizationType: awsapigateway.AuthorizationType_CUSTOM,
+		},
 	)
 
 	return stack
@@ -113,12 +147,14 @@ func main() {
 
 	catalogQueueUrl := os.Getenv("CATALOG_QUEUE_URL")
 	catalogQueueArn := os.Getenv("CATALOG_QUEUE_ARN")
+	lambdaAuthorizerArn := os.Getenv("LAMBDA_AUTHORIZER_NAME")
 
 	app := awscdk.NewApp(nil)
 
 	NewImportServiceStack(app, "ImportServiceStack", &ImportServiceStackProps{
-		CatalogQueueArn: catalogQueueArn,
-		CatalogQueueUrl: catalogQueueUrl,
+		CatalogQueueArn:     catalogQueueArn,
+		CatalogQueueUrl:     catalogQueueUrl,
+		LambdaAuthorizerArn: lambdaAuthorizerArn,
 	})
 
 	app.Synth(nil)
