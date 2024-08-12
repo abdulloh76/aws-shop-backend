@@ -138,7 +138,7 @@ func NewImportServiceStack(scope constructs.Construct, id string, props *ImportS
 
 func main() {
 	// Load environment variables from .env file
-	err := godotenv.Load("../.env")
+	err := godotenv.Load("../../.env")
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
